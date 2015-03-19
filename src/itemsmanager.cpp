@@ -32,6 +32,7 @@
 #include "rapidjson/error/en.h"
 
 #include "application.h"
+#include "buyoutmanager.h"
 #include "datamanager.h"
 #include "itemsmanagerworker.h"
 #include "porting.h"
@@ -42,6 +43,7 @@
 ItemsManager::ItemsManager(Application &app) :
     auto_update_timer_(std::make_unique<QTimer>()),
     data_manager_(app.data_manager()),
+    bo_manager_(app.buyout_manager()),
     shop_(app.shop()),
     app_(app)
 {
@@ -75,6 +77,8 @@ void ItemsManager::OnItemsRefreshed(const Items &items, const std::vector<std::s
     items_ = items;
     tabs_ = tabs;
 
+    MigrateBuyouts();
+
     emit ItemsRefreshed();
 }
 
@@ -101,4 +105,10 @@ void ItemsManager::SetAutoUpdateInterval(int minutes) {
 
 void ItemsManager::OnAutoRefreshTimer() {
     Update();
+}
+
+void ItemsManager::MigrateBuyouts() {
+    for (auto &item : items_)
+        bo_manager_.MigrateItem(*item);
+    bo_manager_.Save();
 }
