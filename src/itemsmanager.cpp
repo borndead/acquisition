@@ -72,10 +72,10 @@ void ItemsManager::OnStatusUpdate(const ItemsFetchStatus &status) {
 }
 
 void ItemsManager::OnItemsRefreshed(const Items &items, const std::vector<std::string> &tabs) {
-    if (shop_.auto_update())
-        shop_.SubmitShopToForum();
+    items_ = items;
+    tabs_ = tabs;
 
-    emit ItemsRefreshed(items, tabs);
+    emit ItemsRefreshed();
 }
 
 void ItemsManager::Update() {
