@@ -43,6 +43,7 @@
 ItemsManager::ItemsManager(Application &app) :
     auto_update_timer_(std::make_unique<QTimer>()),
     data_manager_(app.data_manager()),
+    bo_manager_(app.buyout_manager()),
     shop_(app.shop()),
     app_(app)
 {
@@ -72,8 +73,8 @@ void ItemsManager::OnStatusUpdate(const ItemsFetchStatus &status) {
     emit StatusUpdate(status);
 }
 
-void ItemsManager::PropagateTabBuyouts(const Items &items) {
-    for (auto &item_ptr : items) {
+void ItemsManager::PropagateTabBuyouts() {
+    for (auto &item_ptr : items_) {
         auto &item = *item_ptr;
         auto &bo = app_.buyout_manager();
         std::string hash = item.location().GetUniqueHash();
@@ -98,12 +99,13 @@ void ItemsManager::PropagateTabBuyouts(const Items &items) {
 }
 
 void ItemsManager::OnItemsRefreshed(const Items &items, const std::vector<std::string> &tabs) {
-    PropagateTabBuyouts(items);
+    items_ = items;
+    tabs_ = tabs;
 
-    if (shop_.auto_update())
-        shop_.SubmitShopToForum();
+    MigrateBuyouts();
+    PropagateTabBuyouts();
 
-    emit ItemsRefreshed(items, tabs);
+    emit ItemsRefreshed();
 }
 
 void ItemsManager::Update() {
@@ -129,4 +131,10 @@ void ItemsManager::SetAutoUpdateInterval(int minutes) {
 
 void ItemsManager::OnAutoRefreshTimer() {
     Update();
+}
+
+void ItemsManager::MigrateBuyouts() {
+    for (auto &item : items_)
+        bo_manager_.MigrateItem(*item);
+    bo_manager_.Save();
 }
